@@ -14,6 +14,7 @@ FONTE = set(EXT_LANG) - {".sql", ".ipynb", ".prisma"}
 MANIFESTOS = {"requirements.txt", "pyproject.toml", "Pipfile", "setup.py", "package.json", "pom.xml", "build.gradle", "build.gradle.kts",
               "go.mod", "Gemfile", "composer.json", "Cargo.toml", "pubspec.yaml"}
 MAX_BYTES = 400_000
+GRANDES = [0]
 
 LIBS = {
     "ml_python": r"\b(scikit-learn|sklearn|xgboost|lightgbm|catboost|torch|tensorflow|keras|statsmodels|prophet|numpy|pandas|scipy)\b",
@@ -62,6 +63,7 @@ REGRAS_MANUAIS = r"(if|elif|case|when)\b[^\n]{0,80}\b(in|contains|includes|start
 def ler(p):
     try:
         if os.path.getsize(p) > MAX_BYTES:
+            GRANDES[0] += 1
             return ""
         with open(p, "r", encoding="utf-8", errors="ignore") as f:
             return f.read()
@@ -72,14 +74,19 @@ def ler(p):
 def varrer(raiz):
     raiz = os.path.abspath(raiz)
     r = {"raiz": raiz, "arquivos": 0, "linhas": 0, "linguagens": Counter(), "manifestos": [], "testes": 0, "infra": [], "ci": [],
-         "dados_arquivos": Counter(), "sql_tabelas": 0, "modelos_orm": 0}
+         "dados_arquivos": Counter(), "sql_tabelas": 0, "modelos_orm": 0,
+         "pastas": 0, "pastas_ignoradas": Counter(), "arquivos_grandes_pulados": 0}
     manifesto_txt = []
     hits = {k: Counter() for k in ["ml", "bancos", "frameworks", "cand", "pii", "feedback", "texto", "auditoria", "agendador",
                                    "filas", "llm_chamada", "regras_manuais"]}
     exemplos = defaultdict(list)
     colunas_tipo, tabelas = Counter(), []
     for d, dirs, files in os.walk(raiz):
+        for x in dirs:
+            if x in IGNORAR:
+                r["pastas_ignoradas"][x] += 1
         dirs[:] = [x for x in dirs if x not in IGNORAR]
+        r["pastas"] += 1
         rel_d = os.path.relpath(d, raiz)
         for n in files:
             p = os.path.join(d, n)
@@ -172,6 +179,8 @@ def varrer(raiz):
     r["agendador"] = top(hits["agendador"], 4)
     r["filas"] = top(hits["filas"], 3)
     r["privacidade"] = dict(hits["pii"].most_common())
+    r["arquivos_grandes_pulados"] = GRANDES[0]
+    r["pastas_ignoradas"] = dict(r["pastas_ignoradas"])
     r["gpu_mencionada"] = bool(re.search(r"(nvidia|cuda|gpu)", mt))
     return r
 

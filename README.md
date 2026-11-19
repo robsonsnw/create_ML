@@ -24,7 +24,7 @@ No Windows: `%USERPROFILE%\.claude\skills\create_ML`. Abra uma sessão nova do C
 
 | Comando | O que faz |
 |---|---|
-| `/create_ML` | varre a pasta atual e grava `ML_PLANO.md` na raiz |
+| `/create_ML` | varre tudo a partir da pasta onde você rodou (subpastas e arquivos em qualquer profundidade) e grava `ML_PLANO.md` nela |
 | `/create_ML <pasta>` | idem, para outra pasta |
 | `/create_ML --so-diagnostico` | só o resumo no terminal, sem criar arquivo |
 | `/create_ML --saida <arquivo.md>` | grava o plano em outro caminho |

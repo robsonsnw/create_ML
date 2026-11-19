@@ -11,7 +11,7 @@ Roda sozinha, **sem perguntar nada**, e entrega um diagnóstico + um `ML_PLANO.m
 
 | Comando | O que faz |
 |---|---|
-| `/create_ML` | varre a pasta atual, diagnostica e grava `ML_PLANO.md` na raiz |
+| `/create_ML` | **sem pasta informada, varre tudo a partir da pasta onde o usuário rodou o comando (a pasta atual), incluindo todas as subpastas e arquivos em qualquer profundidade**; diagnostica e grava `ML_PLANO.md` nessa pasta |
 | `/create_ML <pasta>` | idem, para outra pasta |
 | `/create_ML --so-diagnostico` | só o resumo no terminal, não grava arquivo |
 | `/create_ML --saida <arquivo.md>` | grava o plano em outro caminho |
@@ -21,7 +21,7 @@ Argumento ausente = padrão. Nunca pedir confirmação: escolher o padrão e reg
 
 ## Fluxo (executar nesta ordem, sem parar)
 
-1. **Varrer.** Rodar `python <pasta-da-skill>/scripts/varrer.py <pasta>` (só stdlib; em Windows usar `python`, em Linux `python3`). Guardar o JSON. Se o script falhar, varrer com Glob/Grep e seguir.
+1. **Varrer.** Pasta-alvo = argumento, ou, se ausente, a **pasta atual de trabalho** (nunca perguntar, nunca subir para a pasta-pai). Rodar `python <pasta-da-skill>/scripts/varrer.py <pasta-alvo>` (só stdlib; em Windows usar `python`, em Linux `python3`). A varredura é recursiva (todas as subpastas e arquivos); só pula pastas de dependência/build/cache (`node_modules`, `.venv`, `dist`, `.git` etc.) e arquivos acima de 400 KB, e o JSON informa o que foi pulado (`pastas_ignoradas`, `arquivos_grandes_pulados`): citar isso no plano. Guardar o JSON. Se o script falhar, varrer com Glob/Grep e seguir.
 2. **Confirmar lendo código.** Com o JSON, abrir **no máximo 10 arquivos** (use `offset`/`limit`, não leia arquivo inteiro): os `principais_arquivos` do caso de uso mais forte, o esquema do banco (tabelas centrais), um `chamadas_llm`/`regras_manuais` se existir, o `Dockerfile` e o arquivo do agendador. Objetivo: provar ou derrubar cada candidato do script (ele conta palavras, não entende).
 3. **Escolher casos de uso** (até 3, ranqueados) usando `references/criterios.md`: tipo de problema, rótulo existente, volume, feedback, risco.
 4. **Pontuar viabilidade** nas 5 dimensões de `references/criterios.md` e dar **veredito**: `VIÁVEL AGORA`, `VIÁVEL COM PRÉ-REQUISITOS` ou `NÃO COMPENSA AINDA` (com o que falta e como medir).
