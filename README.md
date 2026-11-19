@@ -10,7 +10,7 @@ Rode `/create_ML` na raiz do seu projeto. Sem fazer perguntas, ela:
 4. **Sugere a infra mínima** (CPU antes de GPU, reaproveitando o que já existe).
 5. **Gera o `ML_PLANO.md`**: um prompt em fases para a sua IA construir o ML sob medida.
 
-Agnóstica de banco e de linguagem. Só lê o seu projeto; a única escrita é o `ML_PLANO.md`.
+Varre **tudo** (subpastas, ocultos e dependências; só ignora o `.git` e arquivos acima de 5 MB). Agnóstica de banco e de linguagem. Só lê o seu projeto; a única escrita é o `ML_PLANO.md`.
 
 ## Instalação
 
@@ -26,6 +26,7 @@ No Windows: `%USERPROFILE%\.claude\skills\create_ML`. Abra uma sessão nova do C
 |---|---|
 | `/create_ML` | varre tudo a partir da pasta onde você rodou (subpastas e arquivos em qualquer profundidade) e grava `ML_PLANO.md` nela |
 | `/create_ML <pasta>` | idem, para outra pasta |
+| `/create_ML --rapido` | pula dependências, build e cache (projetos enormes); sem isso varre tudo |
 | `/create_ML --so-diagnostico` | só o resumo no terminal, sem criar arquivo |
 | `/create_ML --saida <arquivo.md>` | grava o plano em outro caminho |
 | `/create_ML --foco <caso>` | força o caso de uso (ex.: `classificacao`) |

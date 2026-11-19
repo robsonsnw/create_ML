@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-"""Varredura de viabilidade de ML. Só stdlib. Uso: python varrer.py <pasta> [--json saida.json]
+"""Varredura de viabilidade de ML. Só stdlib. Uso: python varrer.py <pasta> [--rapido] [--json saida.json]  (padrão: varre TUDO; --rapido pula dependências/build/cache)
 Imprime um JSON com sinais objetivos do código (stack, banco, candidatos a ML, dados, infra, privacidade).
 Não decide nada: a skill lê este JSON e faz o diagnóstico."""
 import json, os, re, sys
 from collections import Counter, defaultdict
 
-IGNORAR = {".git", "node_modules", "venv", ".venv", "env", "__pycache__", "dist", "build", ".next", "target", "vendor",
+IGNORAR_RAPIDO = {"node_modules", "venv", ".venv", "env", "__pycache__", "dist", "build", ".next", "target", "vendor",
            ".idea", ".vscode", "graphify-out", ".pytest_cache", ".mypy_cache", "coverage", "site-packages", ".gradle", "bin", "obj"}
+IGNORAR = {".git"}  # padrão: tudo, exceto os internos do git. --rapido acrescenta IGNORAR_RAPIDO (dependências, build, cache)
 EXT_LANG = {".py": "Python", ".js": "JavaScript", ".jsx": "JavaScript", ".ts": "TypeScript", ".tsx": "TypeScript", ".java": "Java",
             ".kt": "Kotlin", ".go": "Go", ".rb": "Ruby", ".php": "PHP", ".cs": "C#", ".rs": "Rust", ".scala": "Scala", ".swift": "Swift",
             ".dart": "Dart", ".sql": "SQL", ".prisma": "Prisma", ".ipynb": "Notebook"}
 FONTE = set(EXT_LANG) - {".sql", ".ipynb", ".prisma"}
 MANIFESTOS = {"requirements.txt", "pyproject.toml", "Pipfile", "setup.py", "package.json", "pom.xml", "build.gradle", "build.gradle.kts",
               "go.mod", "Gemfile", "composer.json", "Cargo.toml", "pubspec.yaml"}
-MAX_BYTES = 400_000
+MAX_BYTES = 5_000_000  # acima disso o arquivo é contado e pulado (binário/dump); o JSON informa
 GRANDES = [0]
 
 LIBS = {
@@ -71,9 +72,10 @@ def ler(p):
         return ""
 
 
-def varrer(raiz):
+def varrer(raiz, rapido=False):
+    ign = IGNORAR | IGNORAR_RAPIDO if rapido else IGNORAR
     raiz = os.path.abspath(raiz)
-    r = {"raiz": raiz, "arquivos": 0, "linhas": 0, "linguagens": Counter(), "manifestos": [], "testes": 0, "infra": [], "ci": [],
+    r = {"raiz": raiz, "modo": "rapido" if rapido else "completo", "arquivos": 0, "linhas": 0, "linguagens": Counter(), "manifestos": [], "testes": 0, "infra": [], "ci": [],
          "dados_arquivos": Counter(), "sql_tabelas": 0, "modelos_orm": 0,
          "pastas": 0, "pastas_ignoradas": Counter(), "arquivos_grandes_pulados": 0}
     manifesto_txt = []
@@ -83,9 +85,9 @@ def varrer(raiz):
     colunas_tipo, tabelas = Counter(), []
     for d, dirs, files in os.walk(raiz):
         for x in dirs:
-            if x in IGNORAR:
+            if x in ign:
                 r["pastas_ignoradas"][x] += 1
-        dirs[:] = [x for x in dirs if x not in IGNORAR]
+        dirs[:] = [x for x in dirs if x not in ign]
         r["pastas"] += 1
         rel_d = os.path.relpath(d, raiz)
         for n in files:
@@ -202,7 +204,7 @@ if __name__ == "__main__":
     if len(sys.argv) < 2 or not os.path.isdir(sys.argv[1]):
         print("uso: python varrer.py <pasta> [--json saida.json]", file=sys.stderr)
         sys.exit(2)
-    res = varrer(sys.argv[1])
+    res = varrer(sys.argv[1], rapido="--rapido" in sys.argv)
     res["notas_grosseiras"] = nota(res)
     out = json.dumps(res, ensure_ascii=False, indent=1)
     if "--json" in sys.argv:
